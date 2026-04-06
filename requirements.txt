@@ -1,1 +1,3 @@
 playwright>=1.40.0
+pywinauto
+Appium-Python-Client
