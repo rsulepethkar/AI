@@ -1,0 +1,66 @@
+# CI: run xpath_agent and qa_dom_scanner against fixtures/test_page.html (headless Chromium).
+
+name: Agents CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  xpath-agent:
+    name: XPath agent (fixture)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright Chromium
+        run: python -m playwright install chromium --with-deps
+
+      - name: Run xpath_agent on fixture
+        run: |
+          URI=$(python -c "from pathlib import Path; print(Path('fixtures/test_page.html').resolve().as_uri())")
+          OUT=$(python xpath_agent.py --url "$URI" --name "Gift Cards" --by text | tr -d '\r\n')
+          echo "$OUT"
+          test "$OUT" = "//a[text()='Gift Cards']"
+
+  dom-scanner:
+    name: QA DOM scanner (fixture)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright Chromium
+        run: python -m playwright install chromium --with-deps
+
+      - name: Run qa_dom_scanner on fixture
+        run: |
+          URI=$(python -c "from pathlib import Path; print(Path('fixtures/test_page.html').resolve().as_uri())")
+          python qa_dom_scanner.py --url "$URI" -o /tmp/dom_scan.json --compact
+          test -s /tmp/dom_scan.json
+          python << 'PY'
+          import json
+          d = json.load(open("/tmp/dom_scan.json"))
+          assert d.get("Gift Cards") == "//a[text()='Gift Cards']", d
+          print("OK:", len(d), "entries")
+          PY
