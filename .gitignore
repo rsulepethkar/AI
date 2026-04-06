@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.Python
+venv/
+.env
+.venv/
+*.egg-info/
+.scans_cache/
+
+# Generated scan outputs (re-run qa_dom_scanner to recreate)
+scans/
+amazon_in_scan.json
